@@ -8,6 +8,6 @@ To run a simulation, in a terminal, and in the `code/` subfolder, type
 $ python main.py
 ```
 
-The resulting text files are saved in the `results/` subfolder. The two `metrics` files record the performance of players during the pre-selection and the selection phase. Additionally, the first two lines of these files contains all the parameters used in the simulation. The two `totalSet` files contains the behavior of both players (on both the training and a test set) at the end of the pre-selection and the selection phase. Lastly one can obtain a `heatmap` file by choosing `HeatMapFile = True` in `Parameters.py`. This file was used to produce Figure 5 of the article.
+The resulting text files are saved in the `results/` subfolder. The two `metrics` files record the performance of players during the pre-selection and the selection phase. Additionally, the first two lines of these files contain all parameters used in the simulation. The two `totalSet` files contains the behavior of both players (on both the training and a test set) at the end of the pre-selection and the selection phase. Lastly, one can obtain a `heatmap` file by choosing `HeatMapFile = True` in `Parameters.py`. This file was used to produce Figure 5 of the article.
 
 If more details are needed on the code, please contact the first author of the publication at felix.geoffroy.fr@gmail.com.
