@@ -62,19 +62,19 @@ class Game:
 			else:
 				self.inputAutomaticRewardV = np.array([self.ra])
 
-		#Generating the ANN's inputs generated derived from spurious features. (Note that an Interdependent Game has two different possible sets of spurious features for the Principal, depending on the value of the automatic reward)
+		#Generating the ANN's inputs generated derived from spurious features. (Note that an Interdependent Game has two different possible sets of spurious features for the Recipient, depending on the value of the automatic reward)
 		if type == 2:
 			self.inputConfoundingV = [np.random.rand(NbOfConfoundingFeatures), np.random.rand(NbOfConfoundingFeatures)]
 			if GameStructure == "CoEvolution":
-				# self.agentInputsV = np.concatenate((self.inputBenefitV, self.inputCostV))
-				self.agentInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputConfoundingV[0]))
+				# self.investorInputsV = np.concatenate((self.inputBenefitV, self.inputCostV))
+				self.investorInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputConfoundingV[0]))
 		else:
 			self.inputConfoundingV = np.random.rand(NbOfConfoundingFeatures)
-			#self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV))
-			self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV, self.inputConfoundingV))
+			#self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV))
+			self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV, self.inputConfoundingV))
 			if GameStructure == "CoEvolution":
-				#self.agentInputsV = np.concatenate((self.inputBenefitV, self.inputCostV))
-				self.agentInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputConfoundingV))
+				#self.investorInputsV = np.concatenate((self.inputBenefitV, self.inputCostV))
+				self.investorInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputConfoundingV))
 
 
 
@@ -88,8 +88,8 @@ class Game:
 		else:
 			self.commonInterest = True
 		self.ra = self.raV[rand]
-		# self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[rand]))
-		self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[rand], self.inputConfoundingV[rand]))
+		# self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[rand]))
+		self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[rand], self.inputConfoundingV[rand]))
 
 
 
@@ -103,5 +103,5 @@ class Game:
 			self.commonInterest = False
 			ind = 0
 		self.ra = self.raV[ind]
-		# self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[ind]))
-		self.principalInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[ind], self.inputConfoundingV[ind]))
+		# self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[ind]))
+		self.recipientInputsV = np.concatenate((self.inputBenefitV, self.inputCostV, self.inputAutomaticRewardV[ind], self.inputConfoundingV[ind]))

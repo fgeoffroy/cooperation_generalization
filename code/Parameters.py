@@ -2,11 +2,11 @@ import sys
 
 
 
-NbOfInputPerParam = 1
+NbOfInputPerParam = 1	# Parameter NP in the article
 InputComplexity = 1		# Additional complexity parameter, set to 1 for all results shown in the article
-NbOfConfoundingFeatures = 10
+NbOfConfoundingFeatures = 10	# Parameter NS
 Alpha = 0	#Importance of cooperation, should be in [0, 1]
-InterNb = 16
+InterNb = 16	# Number of Interdependent games in the training set
 
 NonCooperationCost = 1 - Alpha
 if InputComplexity == 0 and NbOfInputPerParam != 1:
@@ -25,8 +25,8 @@ elif GradientMethod == "Stochastic":
 else:
 	BatchSize = 50	#50
 
-# There are two players: the Agent (the Trustee) annd the Principal (the Trustee)
-GameStructure = "CoEvolution"	# "PrincipalAlone"	"AgentDarwinianDemon"	"CoEvolution"
+# There are two players: the Investor annd the Recipient
+GameStructure = "CoEvolution"	# "RecipientAlone"	"InvestorDarwinianDemon"	"CoEvolution"
 
 ClassifierThreshold = 0.5
 NbOfHiddenNeurons = 10
@@ -35,8 +35,8 @@ MaxValueGameParameter = 1
 IsSigmoidOutput = False
 
 Extra = 0.05
-NbOfIterationsSeparatedSelection = 10 #1000	Pre-selection phase
-NbOfIterations = 10 #10000				Selection phase
-PrintLag = 5 #500							The 2 metrics files are updated every PrintLag iterations
+NbOfIterationsSeparatedSelection = 1000 #Pre-selection phase
+NbOfIterations = 10000 					#Selection phase
+PrintLag = 500 							#The 2 metrics files are updated every PrintLag iterations
 
 HeatMapFile = False		# For generating figure 5 in the article

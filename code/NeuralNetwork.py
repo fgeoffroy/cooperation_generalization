@@ -10,10 +10,10 @@ import sys
 class NeuralNetwork:
 
 	def __init__(self, playerType):
-		if playerType == "Principal":
-			nbParam = 3		#{b; c; ra} for the Principal (the Trustee)
-		elif playerType == "Agent":
-			nbParam = 2		#{b; c} for the Agent (the Truster)
+		if playerType == "Recipient":
+			nbParam = 3		#{b; c; ra} for the Recipient
+		elif playerType == "Investor":
+			nbParam = 2		#{b; c} for the Investor
 		nbInputs = NbOfInputPerParam * nbParam + NbOfConfoundingFeatures
 		self.activationInput = np.ones(nbInputs + 1)
 		self.activationHidden = None
@@ -49,8 +49,8 @@ class NeuralNetwork:
 	def backward(self, targetV, selectionStrengthV, updateSubSetSize):
 		subSetSize = targetV.shape[0]
 		#Error, target result
-		deltaOutput = self.activationOutput - targetV 		#Formule valable pour activation sigmoide + cross-entropy error function OU ALORS pour activation lineraire et mean squared error (cf https://stats.stackexchange.com/questions/218542/which-activation-function-for-output-layer)
-		deltaOutput *= selectionStrengthV	#Pour ne pas tenir compte des opportunites sur lesquelles il n'y a pas de selection + selection moindre sur le Principal quand l'agent a une faible proba de tester
+		deltaOutput = self.activationOutput - targetV 		#This works for both sigmoidal activation + cross-entropy error AND linear activation + mean squared error
+		deltaOutput *= selectionStrengthV	#Here we take into account the fact that selection strength might vary between games
 
 		#Backward deltas
 		deltaHidden = self.weightOut[:-1].T * deltaOutput		#No need to compute the delta of the biais unit

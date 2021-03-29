@@ -19,12 +19,12 @@ import os
 class Population:
 
 	def __init__(self):
-		# There are two players: the Agent (the Trustee) annd the Principal (the Trustee)
-		self.Principal = NeuralNetwork("Principal")
-		self.metricsVectP = np.zeros(10)	#nb of each type of metrics// 0: SELFTrueNegatives ; 1: SELFFalsePositives ; 2: COOPTruePositives ; 3: COOPFalseNegatives ; 4: INTERTruePositives ; 5: INTERFalsePositives ; 6: INTERTrueNegatives ; 7: INTERFalseNegatives ; 8: WASTETrueNegatives ; 9: WASTEFalsePositives
+		# There are two players: the Investor and the Recipient
+		self.Recipient = NeuralNetwork("Recipient")
+		self.metricsRecipient = np.zeros(10)	#nb of each type of metrics// 0: SELFISH True Negatives ; 1: SELFISH False Positives ; 2: COOPERATIVE True Positives ; 3: COOPERATIVE False Negatives ; 4: INTERDEPENDENT True Positives ; 5: INTERDEPENDENT False Positives ; 6: INTERDEPENDENT True Negatives ; 7: INTERDEPENDENT False Negatives ; 8: WASTEFUL True Negatives ; 9: WASTEFUL False Positives
 		if GameStructure == "CoEvolution":
-			self.Agent = NeuralNetwork("Agent")
-		self.metricsVectA = np.zeros(12)	#nb of each type of metrics// 0: BPTruePositives ; 1: BPFalseNegatives ; 2: COOPTrueNegatives ; 3: COOPFalsePositives ; 4: COOPTruePositives ; 5: COOPFalseNegatives ; 6: BOOTTruePositives ; 7: BOOTFalseNegatives ; 8: NILTrueNegatives ; 9: NILFalsePositives ; 10: NILTruePositives ; 11: NILFalseNegatives
+			self.Investor = NeuralNetwork("Investor")
+		self.metricsInvestor = np.zeros(12)	#nb of each type of metrics// 0: SELFISH True Positives ; 1: SELFISH False Negatives ; 2: COOPERATIVE True Negatives ; 3: COOPERATIVE False Positives ; 4: COOPERATIVE True Positives ; 5: COOPERATIVE False Negatives ; 6: INTERDEPENDENT True Positives ; 7: INTERDEPENDENT False Negatives ; 8: WASTEFUL True Negatives ; 9: WASTEFUL False Positives ; 10: WASTEFUL True Positives ; 11: WASTEFUL False Negatives
 
 
 		#List of parameters for encrypting b and c into input(s) for neural networks (according to JBs model)
@@ -153,21 +153,21 @@ class Population:
 				commonInterestV = [opp.commonInterest for opp in subSet]
 				commonInterestV = np.vstack(commonInterestV)
 
-				#Principal (forward, then target and backward)
+				#Recipient (forward, then target and backward)
 				rewardV = self.rewarding(subSet)
 				rewardedV = rewardV + automaticRewardV - costV >= 0
-				targetRewardV = np.zeros((subSetSize, 1))	# in the preselection phase, we train the Principal to reward r=0 for every interaction
+				targetRewardV = np.zeros((subSetSize, 1))	# in the preselection phase, we train the Recipient to reward r=0 for every interaction
 				rewardSelectionStrengthV = np.ones((subSetSize, 1))
-				self.Principal.backward(targetRewardV, rewardSelectionStrengthV, subSetSize)
+				self.Recipient.backward(targetRewardV, rewardSelectionStrengthV, subSetSize)
 
-				if GameStructure == "AgentDarwinianDemon" or GameStructure == "PrincipalAlone":
+				if GameStructure == "InvestorDarwinianDemon" or GameStructure == "RecipientAlone":
 					testV = np.zeros((subSetSize, 1))
 				elif GameStructure == "CoEvolution":
-					#Agent (forward, then target and backward)
+					#Investor (forward, then target and backward)
 					testV = self.investing(subSet)
-					targetTestV = np.zeros((subSetSize, 1))	# in the preselection phase, we train the Agent to never "pay to see" (i.e. probabilistic output = 0)
+					targetTestV = np.zeros((subSetSize, 1))	# in the preselection phase, we train the Investor to never "pay to see" (i.e. probabilistic output = 0)
 					testSelectionStrengthV = np.ones((subSetSize, 1))
-					self.Agent.backward(targetTestV, testSelectionStrengthV, subSetSize)
+					self.Investor.backward(targetTestV, testSelectionStrengthV, subSetSize)
 
 				#Metrics
 				self.update_metrics(typeV, commonInterestV, rewardedV, testV > 0)
@@ -175,8 +175,8 @@ class Population:
 			if i % PrintLag == 0:
 				self.normalize_metrics()
 				self.update_metrics_file(i, self.separatedSelectionMetricsName)
-				self.metricsVectP = np.zeros(10)
-				self.metricsVectA = np.zeros(12)
+				self.metricsRecipient = np.zeros(10)
+				self.metricsInvestor = np.zeros(12)
 
 
 	def selection(self):
@@ -204,38 +204,38 @@ class Population:
 				commonInterestV = [opp.commonInterest for opp in subSet]
 				commonInterestV = np.vstack(commonInterestV)
 				rewardedV = rewardV + automaticRewardV - costV >= 0
-				if GameStructure == "PrincipalAlone":
-					testV = np.logical_or(typeV == 0, typeV == 2)	#Agent should "pay to see" in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
-				elif GameStructure == "AgentDarwinianDemon":
-					#testV = np.logical_or(typeV == 0, typeV == 2, np.logical_and(typeV == 1, rewardedV == 1))	#Agent should test in Selfish and Interdependent and [Coop if Principal rewards]
-					testV = np.logical_or.reduce((typeV == 0, typeV == 2, np.logical_and(np.logical_or(typeV == 1, typeV == 3), rewardedV == 1)))	#Agent should test in Selfish and Interdependent and [Coop or Waste if Principal rewards]
+				if GameStructure == "RecipientAlone":
+					testV = np.logical_or(typeV == 0, typeV == 2)	#Investor should "pay to see" in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
+				elif GameStructure == "InvestorDarwinianDemon":
+					#testV = np.logical_or(typeV == 0, typeV == 2, np.logical_and(typeV == 1, rewardedV == 1))	#Investor should test in Selfish and Interdependent and [Coop if Recipient rewards]
+					testV = np.logical_or.reduce((typeV == 0, typeV == 2, np.logical_and(np.logical_or(typeV == 1, typeV == 3), rewardedV == 1)))	#Investor should test in Selfish and Interdependent and [Coop or Waste if Recipient rewards]
 				elif GameStructure == "CoEvolution":
 					testV = self.investing(subSet)
 
-					#TARGETS AND BACKWARD for Agent
-					targetTestV = np.logical_or(rewardedV, typeV == 2)	#Agent should invest if Inter or r - c >= 0
-					#Selection strength for Agent (depends on both the agent output and the game's type)
-					testSelectionStrengthV = testV != targetTestV	#We don't train the Agent on opportunities for which it is already correct
+					#TARGETS AND BACKWARD for Investor
+					targetTestV = np.logical_or(rewardedV, typeV == 2)	#Investor should invest if Inter or r - c >= 0
+					#Selection strength for Investor (depends on both the investor output and the game's type)
+					testSelectionStrengthV = testV != targetTestV	#We don't train the Investor on opportunities for which it is already correct
 					selectionCoopOrInterV = np.logical_or(typeV == 1, typeV == 2)
 					selectionSelfishOrWasteful = NonCooperationCost * np.logical_or(typeV == 0, typeV == 3)
 					testSelectionStrengthV = testSelectionStrengthV * (selectionCoopOrInterV + selectionSelfishOrWasteful)	#For Cooperative and Interdependent games, the selection strength is normalized to 1. For Selfish and Wasteful games, the factor "NonCooperationCost" is applied (between 0 and 1).
 					testUpdateSubSetSize = testSelectionStrengthV[testSelectionStrengthV > 0].size
 					if testUpdateSubSetSize > 0:
-						self.Agent.backward(targetTestV, testSelectionStrengthV, testUpdateSubSetSize)
+						self.Investor.backward(targetTestV, testSelectionStrengthV, testUpdateSubSetSize)
 
-				#TARGETS AND BACKWARD for Principal
+				#TARGETS AND BACKWARD for Recipient
 				testedV = testV > 0
-				targetRewardV = np.logical_and(testV > 0, np.logical_or(typeV == 1, np.logical_and(typeV == 2, commonInterestV == 0)))	#The Principal should reward for Inter (when ra < c) and Coop if I tests
+				targetRewardV = np.logical_and(testV > 0, np.logical_or(typeV == 1, np.logical_and(typeV == 2, commonInterestV == 0)))	#The Recipient should reward for Inter (when ra < c) and Coop if I tests
 				targetRewardV = targetRewardV * (costV - automaticRewardV + Extra)
-				#Selection strength for Principal (depends on both the agent output and the game's type)
-				rewardSelectionStrengthV = testV		#Selection strength of reward linearily increases with the probability that the Agent tests
+				#Selection strength for Recipient (depends on both the investor output and the game's type)
+				rewardSelectionStrengthV = testV		#Selection strength of reward linearily increases with the probability that the Investor tests
 				if GameStructure != "CoEvolution":
 					selectionCoopOrInterV = np.logical_or(typeV == 1, typeV == 2)
 					selectionSelfishOrWasteful = NonCooperationCost * np.logical_or(typeV == 0, typeV == 3)
 				rewardSelectionStrengthV = rewardSelectionStrengthV * (selectionCoopOrInterV + selectionSelfishOrWasteful)	#For Cooperative and Interdependent games, the selection strength is normalized to 1. For Selfish and Wasteful games, the factor "NonCooperationCost" is applied (between 0 and 1).
 				rewardUpdateSubSetSize = rewardSelectionStrengthV[rewardSelectionStrengthV > 0].size
 				if rewardUpdateSubSetSize > 0:
-					self.Principal.backward(targetRewardV, rewardSelectionStrengthV, rewardUpdateSubSetSize)
+					self.Recipient.backward(targetRewardV, rewardSelectionStrengthV, rewardUpdateSubSetSize)
 
 				#Metrics
 				self.update_metrics(typeV, commonInterestV, rewardedV, testedV)
@@ -243,8 +243,8 @@ class Population:
 			if i % PrintLag == 0:
 				self.normalize_metrics()
 				self.update_metrics_file(i, self.selectionMetricsName)
-				self.metricsVectP = np.zeros(10)
-				self.metricsVectA = np.zeros(12)
+				self.metricsRecipient = np.zeros(10)
+				self.metricsInvestor = np.zeros(12)
 				if HeatMapFile: self.update_heatmap_file(i, self.selectionHeatMapName)
 
 
@@ -261,84 +261,84 @@ class Population:
 
 
 	def rewarding(self, subSet):
-		inputV = [opp.principalInputsV for opp in subSet]
+		inputV = [opp.recipientInputsV for opp in subSet]
 		inputMatrix = np.vstack(inputV)
-		outputP = self.Principal.forwardActivation(inputMatrix)
-		outputP *= MaxValueGameParameter	#Normalization
-		return outputP
+		outputR = self.Recipient.forwardActivation(inputMatrix)
+		outputR *= MaxValueGameParameter	#Normalization
+		return outputR
 
 
 	def investing(self, subSet):
-		inputV = [opp.agentInputsV for opp in subSet]
+		inputV = [opp.investorInputsV for opp in subSet]
 		inputMatrix = np.vstack(inputV)
-		outputA = self.Agent.forwardActivation(inputMatrix)
+		outputI = self.Investor.forwardActivation(inputMatrix)
 
-		if IsSigmoidOutput:	 #If the output of the Agent's ANN is a sigmoid, we normalize it so that output between 0 and 0.5 gives a probability = 0 of investing. Accordinglyn outputs in [0.5; 1] are normalized for a probability of investing in [0; 1]
-			outputA = (outputA - 0.5) * 2
-			outputA[outputA < 0] = 0
+		if IsSigmoidOutput:	 #If the output of the Investor's ANN is a sigmoid, we normalize it so that output between 0 and 0.5 gives a probability = 0 of investing. Accordinglyn outputs in [0.5; 1] are normalized for a probability of investing in [0; 1]
+			outputI = (outputI - 0.5) * 2
+			outputI[outputI < 0] = 0
 
-		return outputA
+		return outputI
 
 
 
 	def update_metrics(self, typeV, commonInterestV, rewardedV, investedV):
-		self.metricsVectP[0] += np.sum(np.logical_and(rewardedV == 0, typeV == 0))	#Selfish True Negatives
-		self.metricsVectP[1] += np.sum(np.logical_and(rewardedV == 1, typeV == 0))	#Selfish False Positives
-		self.metricsVectP[2] += np.sum(np.logical_and(rewardedV == 1, typeV == 1))	#Coop True Positives
-		self.metricsVectP[3] += np.sum(np.logical_and(rewardedV == 0, typeV == 1))	#Coop False Negatives
-		self.metricsVectP[4] += np.sum(np.logical_and.reduce((rewardedV == 1, typeV == 2, commonInterestV == 0)))	#Interdependent True Positives
-		self.metricsVectP[5] += np.sum(np.logical_and.reduce((rewardedV == 1, typeV == 2, commonInterestV == 1)))	#Interdependent False Positives
-		self.metricsVectP[6] += np.sum(np.logical_and.reduce((rewardedV == 0, typeV == 2, commonInterestV == 1)))	#Interdependent True Negatives
-		self.metricsVectP[7] += np.sum(np.logical_and.reduce((rewardedV == 0, typeV == 2, commonInterestV == 0)))	#Interdependent False Negatives
-		self.metricsVectP[8] += np.sum(np.logical_and(rewardedV == 0, typeV == 3))	#Wasteful True Negatives
-		self.metricsVectP[9] += np.sum(np.logical_and(rewardedV == 1, typeV == 3))	#Wasteful False Positives
+		self.metricsRecipient[0] += np.sum(np.logical_and(rewardedV == 0, typeV == 0))	#Selfish True Negatives
+		self.metricsRecipient[1] += np.sum(np.logical_and(rewardedV == 1, typeV == 0))	#Selfish False Positives
+		self.metricsRecipient[2] += np.sum(np.logical_and(rewardedV == 1, typeV == 1))	#Coop True Positives
+		self.metricsRecipient[3] += np.sum(np.logical_and(rewardedV == 0, typeV == 1))	#Coop False Negatives
+		self.metricsRecipient[4] += np.sum(np.logical_and.reduce((rewardedV == 1, typeV == 2, commonInterestV == 0)))	#Interdependent True Positives
+		self.metricsRecipient[5] += np.sum(np.logical_and.reduce((rewardedV == 1, typeV == 2, commonInterestV == 1)))	#Interdependent False Positives
+		self.metricsRecipient[6] += np.sum(np.logical_and.reduce((rewardedV == 0, typeV == 2, commonInterestV == 1)))	#Interdependent True Negatives
+		self.metricsRecipient[7] += np.sum(np.logical_and.reduce((rewardedV == 0, typeV == 2, commonInterestV == 0)))	#Interdependent False Negatives
+		self.metricsRecipient[8] += np.sum(np.logical_and(rewardedV == 0, typeV == 3))	#Wasteful True Negatives
+		self.metricsRecipient[9] += np.sum(np.logical_and(rewardedV == 1, typeV == 3))	#Wasteful False Positives
 
-		self.metricsVectA[0] += np.sum(np.logical_and(investedV == 1, typeV == 0))								#Selfish True Positives
-		self.metricsVectA[1] += np.sum(np.logical_and(investedV == 0, typeV == 0))								#Selfish False Negatives
-		self.metricsVectA[2] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 0, typeV == 1)))		#Coop True Negatives
-		self.metricsVectA[3] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 0, typeV == 1)))		#Coop False Positives
-		self.metricsVectA[4] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 1, typeV == 1)))		#Coop True Positives
-		self.metricsVectA[5] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 1, typeV == 1)))		#Coop False Negatives
-		self.metricsVectA[6] += np.sum(np.logical_and(investedV == 1, typeV == 2))								#Interdependent True Positives
-		self.metricsVectA[7] += np.sum(np.logical_and(investedV == 0, typeV == 2))								#Interdependent False Negatives
-		self.metricsVectA[8] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 0, typeV == 3)))		#Wasteful True Negatives
-		self.metricsVectA[9] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 0, typeV == 3)))		#Wasteful False Positives
-		self.metricsVectA[10] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 1, typeV == 3)))	#Wasteful True Positives
-		self.metricsVectA[11] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 1, typeV == 3)))	#Wasteful False Negatives
+		self.metricsInvestor[0] += np.sum(np.logical_and(investedV == 1, typeV == 0))								#Selfish True Positives
+		self.metricsInvestor[1] += np.sum(np.logical_and(investedV == 0, typeV == 0))								#Selfish False Negatives
+		self.metricsInvestor[2] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 0, typeV == 1)))		#Coop True Negatives
+		self.metricsInvestor[3] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 0, typeV == 1)))		#Coop False Positives
+		self.metricsInvestor[4] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 1, typeV == 1)))		#Coop True Positives
+		self.metricsInvestor[5] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 1, typeV == 1)))		#Coop False Negatives
+		self.metricsInvestor[6] += np.sum(np.logical_and(investedV == 1, typeV == 2))								#Interdependent True Positives
+		self.metricsInvestor[7] += np.sum(np.logical_and(investedV == 0, typeV == 2))								#Interdependent False Negatives
+		self.metricsInvestor[8] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 0, typeV == 3)))		#Wasteful True Negatives
+		self.metricsInvestor[9] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 0, typeV == 3)))		#Wasteful False Positives
+		self.metricsInvestor[10] += np.sum(np.logical_and.reduce((investedV == 1, rewardedV == 1, typeV == 3)))	#Wasteful True Positives
+		self.metricsInvestor[11] += np.sum(np.logical_and.reduce((investedV == 0, rewardedV == 1, typeV == 3)))	#Wasteful False Negatives
 
 
 	def normalize_metrics(self):
-		nbOfSELFMetrics = self.metricsVectP[0] + self.metricsVectP[1]
-		nbOfCOOPMetrics = self.metricsVectP[2] + self.metricsVectP[3]
-		nbOfINTERCommonMetrics = self.metricsVectP[5] + self.metricsVectP[6]
-		nbOfINTERDivergentMetrics = self.metricsVectP[4] + self.metricsVectP[7]
+		nbOfSELFMetrics = self.metricsRecipient[0] + self.metricsRecipient[1]
+		nbOfCOOPMetrics = self.metricsRecipient[2] + self.metricsRecipient[3]
+		nbOfINTERCommonMetrics = self.metricsRecipient[5] + self.metricsRecipient[6]
+		nbOfINTERDivergentMetrics = self.metricsRecipient[4] + self.metricsRecipient[7]
 		nbOfINTERMetrics = nbOfINTERCommonMetrics + nbOfINTERDivergentMetrics
-		nbOfWASTEMetrics = self.metricsVectP[8] + self.metricsVectP[9]
-		self.metricsVectP[0] /= nbOfSELFMetrics
-		self.metricsVectP[1] /= nbOfSELFMetrics
-		self.metricsVectP[2] /= nbOfCOOPMetrics
-		self.metricsVectP[3] /= nbOfCOOPMetrics
+		nbOfWASTEMetrics = self.metricsRecipient[8] + self.metricsRecipient[9]
+		self.metricsRecipient[0] /= nbOfSELFMetrics
+		self.metricsRecipient[1] /= nbOfSELFMetrics
+		self.metricsRecipient[2] /= nbOfCOOPMetrics
+		self.metricsRecipient[3] /= nbOfCOOPMetrics
 		if nbOfINTERCommonMetrics != 0:
-			self.metricsVectP[5] /= nbOfINTERCommonMetrics
-			self.metricsVectP[6] /= nbOfINTERCommonMetrics
+			self.metricsRecipient[5] /= nbOfINTERCommonMetrics
+			self.metricsRecipient[6] /= nbOfINTERCommonMetrics
 		if nbOfINTERDivergentMetrics != 0:
-			self.metricsVectP[4] /= nbOfINTERDivergentMetrics
-			self.metricsVectP[7] /= nbOfINTERDivergentMetrics
-		self.metricsVectP[8] /= nbOfWASTEMetrics
-		self.metricsVectP[9] /= nbOfWASTEMetrics
-		self.metricsVectA[0] /= nbOfSELFMetrics
-		self.metricsVectA[1] /= nbOfSELFMetrics
-		self.metricsVectA[2] /= nbOfCOOPMetrics
-		self.metricsVectA[3] /= nbOfCOOPMetrics
-		self.metricsVectA[4] /= nbOfCOOPMetrics
-		self.metricsVectA[5] /= nbOfCOOPMetrics
+			self.metricsRecipient[4] /= nbOfINTERDivergentMetrics
+			self.metricsRecipient[7] /= nbOfINTERDivergentMetrics
+		self.metricsRecipient[8] /= nbOfWASTEMetrics
+		self.metricsRecipient[9] /= nbOfWASTEMetrics
+		self.metricsInvestor[0] /= nbOfSELFMetrics
+		self.metricsInvestor[1] /= nbOfSELFMetrics
+		self.metricsInvestor[2] /= nbOfCOOPMetrics
+		self.metricsInvestor[3] /= nbOfCOOPMetrics
+		self.metricsInvestor[4] /= nbOfCOOPMetrics
+		self.metricsInvestor[5] /= nbOfCOOPMetrics
 		if nbOfINTERMetrics != 0:
-			self.metricsVectA[6] /= nbOfINTERMetrics
-			self.metricsVectA[7] /= nbOfINTERMetrics
-		self.metricsVectA[8] /= nbOfWASTEMetrics
-		self.metricsVectA[9] /= nbOfWASTEMetrics
-		self.metricsVectA[10] /= nbOfWASTEMetrics
-		self.metricsVectA[11] /= nbOfWASTEMetrics
+			self.metricsInvestor[6] /= nbOfINTERMetrics
+			self.metricsInvestor[7] /= nbOfINTERMetrics
+		self.metricsInvestor[8] /= nbOfWASTEMetrics
+		self.metricsInvestor[9] /= nbOfWASTEMetrics
+		self.metricsInvestor[10] /= nbOfWASTEMetrics
+		self.metricsInvestor[11] /= nbOfWASTEMetrics
 
 
 
@@ -351,7 +351,7 @@ class Population:
 			fileName.write(repr(SelfishNb) + " " + repr(CoopNb) + " " + repr(InterNb) + " " + repr(WasteNb) + " " + repr(MaxValueGameParameter) + " " + repr(InputComplexity) + " " + repr(NbOfInputPerParam) + " " + repr(NbOfConfoundingFeatures) + " " + repr(NonCooperationCost) + " " + repr(NbOfIterationsSeparatedSelection) + " " + repr(NbOfIterations) + " " + repr(PrintLag) + " " + repr(NbOfHiddenNeurons) + " " + repr(Extra) + " " + repr(ClassifierThreshold) + " " + repr(IsSigmoidOutput) + " " + repr(GameStructure))
 			fileName.write(" " + repr(GradientMethod) + " " + repr(BatchSize) + " " +	repr(LearningRate))
 			fileName.write('\n')
-			fileName.write('"Iteration" "SELFTrueNegativesP" "SELFFalsePositivesP" "COOPTruePositivesP" "COOPFalseNegativesP" "INTERTruePositivesP" "INTERFalsePositivesP" "INTERTrueNegativesP" "INTERFalseNegativesP" "WASTETrueNegativesP" "WASTEFalsePositivesP" "SELFTruePositivesA" "SELFFalseNegativesA" "COOPTrueNegativesA" "COOPFalsePositivesA" "COOPTruePositivesA" "COOPFalseNegativesA" "INTERTruePositivesA" "INTERFalseNegativesA" "WASTETrueNegativesA" "WASTEFalsePositivesA" "WASTETruePositivesA" "WASTEFalseNegativesA"')
+			fileName.write('"Iteration" "SELFTrueNegativesR" "SELFFalsePositivesR" "COOPTruePositivesR" "COOPFalseNegativesR" "INTERTruePositivesR" "INTERFalsePositivesR" "INTERTrueNegativesR" "INTERFalseNegativesR" "WASTETrueNegativesR" "WASTEFalsePositivesR" "SELFTruePositivesI" "SELFFalseNegativesI" "COOPTrueNegativesI" "COOPFalsePositivesI" "COOPTruePositivesI" "COOPFalseNegativesI" "INTERTruePositivesI" "INTERFalseNegativesI" "WASTETrueNegativesI" "WASTEFalsePositivesI" "WASTETruePositivesI" "WASTEFalseNegativesI"')
 			fileName.write('\n')
 
 
@@ -364,7 +364,7 @@ class Population:
 			fileName.write(repr(SelfishNb) + " " + repr(CoopNb) + " " + repr(InterNb) + " " + repr(WasteNb) + " " + repr(MaxValueGameParameter) + " " + repr(InputComplexity) + " " + repr(NbOfInputPerParam) + " " + repr(NbOfConfoundingFeatures) + " " + repr(NonCooperationCost) + " " + repr(NbOfIterationsSeparatedSelection) + " " + repr(NbOfIterations) + " " + repr(PrintLag) + " " + repr(NbOfHiddenNeurons) + " " + repr(Extra) + " " + repr(ClassifierThreshold) + " " + repr(IsSigmoidOutput) + " " + repr(GameStructure))
 			fileName.write(" " + repr(GradientMethod) + " " + repr(BatchSize) + " " +	repr(LearningRate))
 			fileName.write('\n')
-			fileName.write('"Iteration" "GameIndex" "Type" "Cost" "Benefit" "AutomaticReward" "CommonInterest" "Reward" "Rewarded" "Test" "ErrorPrincipal" "ErrorAgent"')
+			fileName.write('"Iteration" "GameIndex" "Type" "Cost" "Benefit" "AutomaticReward" "CommonInterest" "Reward" "Rewarded" "Test" "ErrorRecipient" "ErrorInvestor"')
 			fileName.write('\n')
 
 
@@ -385,28 +385,28 @@ class Population:
 						opp.setCommonInterest(listCommonInterest[i])
 
 					fileName.write(repr(iteration) + " " + repr(opp.index) + " " + repr(typeOfOpp) + " " + repr(opp.c) + " " + repr(opp.b) + " " + repr(opp.ra) + " " + repr(str(opp.commonInterest)))
-					outputP = self.rewarding([opp])
-					fileName.write(" " + repr(outputP[0][0]))
-					rewarded = outputP + opp.ra - opp.c >= 0
+					outputR = self.rewarding([opp])
+					fileName.write(" " + repr(outputR[0][0]))
+					rewarded = outputR + opp.ra - opp.c >= 0
 					fileName.write(" " + repr(int(rewarded[0][0])))
 
-					if GameStructure == "PrincipalAlone":
-						test = (typeOfOpp == 0 or typeOfOpp == 2)	#Agent should test in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
+					if GameStructure == "RecipientAlone":
+						test = (typeOfOpp == 0 or typeOfOpp == 2)	#Investor should test in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
 						test = int(test)
-					elif GameStructure == "AgentDarwinianDemon":
-						test = (typeOfOpp == 0 or typeOfOpp == 2 or ((typeOfOpp == 1 or typeOfOpp == 3) and rewarded == 1))	#Agent should test in Selfish and Interdependent and [Coop or Waste if Principal rewards]
+					elif GameStructure == "InvestorDarwinianDemon":
+						test = (typeOfOpp == 0 or typeOfOpp == 2 or ((typeOfOpp == 1 or typeOfOpp == 3) and rewarded == 1))	#Investor should test in Selfish and Interdependent and [Coop or Waste if Recipient rewards]
 						test = int(test)
 					elif GameStructure == "CoEvolution":
 						test = self.investing([opp])
 						test = test[0][0]
 					fileName.write(" " + repr(test))
-					targetReward = (typeOfOpp == 1 or typeOfOpp == 2)	#The Principal should reward for Inter (when ra < c) and Coop if I tests
+					targetReward = (typeOfOpp == 1 or typeOfOpp == 2)	#The Recipient should reward for Inter (when ra < c) and Coop if I tests
 					targetReward = targetReward * (opp.c - opp.ra + Extra)
-					errorP = math.pow(outputP - targetReward, 2)
-					fileName.write(" " + repr(errorP))
+					errorR = math.pow(outputR - targetReward, 2)
+					fileName.write(" " + repr(errorR))
 					targetTest = (rewarded or typeOfOpp == 2)
-					errorA = math.pow(test - targetTest, 2)
-					fileName.write(" " + repr(errorA))
+					errorI = math.pow(test - targetTest, 2)
+					fileName.write(" " + repr(errorI))
 					fileName.write('\n')
 
 
@@ -414,16 +414,16 @@ class Population:
 	def update_metrics_file(self, iteration, name):
 		with open(name, "a") as fileName:
 			fileName.write(repr(iteration))
-			for metrics in self.metricsVectP:
+			for metrics in self.metricsRecipient:
 				fileName.write(" " + wr(metrics))
-			for metrics in self.metricsVectA:
+			for metrics in self.metricsInvestor:
 				fileName.write(" " + wr(metrics))
 			fileName.write('\n')
 
 
 	def create_totalSet_file(self, name):
 		with open(name, "wb") as fileName:
-			fileName.write('"TypeOfSet" "GameIndex" "Type" "Cost" "Benefit" "AutomaticReward" "CommonInterest" "Reward" "Rewarded" "Test" "ErrorPrincipal" "ErrorAgent"')
+			fileName.write('"TypeOfSet" "GameIndex" "Type" "Cost" "Benefit" "AutomaticReward" "CommonInterest" "Reward" "Rewarded" "Test" "ErrorRecipient" "ErrorInvestor"')
 			fileName.write('\n')
 
 			totalSet = np.concatenate((self.trainingSet, self.testSet))
@@ -442,30 +442,30 @@ class Population:
 						opp.setCommonInterest(listCommonInterest[i])
 
 					fileName.write(repr(opp.typeOfSet) + " " + repr(opp.index) + " " + repr(typeOfOpp) + " " + repr(opp.c) + " " + repr(opp.b) + " " + repr(opp.ra) + " " + repr(str(opp.commonInterest)))
-					outputP = self.rewarding([opp])
-					fileName.write(" " + repr(outputP[0][0]))
-					rewarded = outputP + opp.ra - opp.c >= 0
+					outputR = self.rewarding([opp])
+					fileName.write(" " + repr(outputR[0][0]))
+					rewarded = outputR + opp.ra - opp.c >= 0
 					rewarded = rewarded[0][0]
 					fileName.write(" " + repr(int(rewarded)))
 
-					if GameStructure == "PrincipalAlone":
-						test = (typeOfOpp == 0 or typeOfOpp == 2)	#Agent should test in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
+					if GameStructure == "RecipientAlone":
+						test = (typeOfOpp == 0 or typeOfOpp == 2)	#Investor should test in Selfish and Interdependent (because c - ra < 0, at least at some occasion)
 						test = int(test)
-					elif GameStructure == "AgentDarwinianDemon":
-						test = ((typeOfOpp == 0 or typeOfOpp == 2) or ((typeOfOpp == 1 or typeOfOpp == 3) and rewarded == 1))	#Agent should test in Selfish and Interdependent and [Coop or Waste if Principal rewards]
+					elif GameStructure == "InvestorDarwinianDemon":
+						test = ((typeOfOpp == 0 or typeOfOpp == 2) or ((typeOfOpp == 1 or typeOfOpp == 3) and rewarded == 1))	#Investor should test in Selfish and Interdependent and [Coop or Waste if Recipient rewards]
 						test = int(test)
 					elif GameStructure == "CoEvolution":
 						test = self.investing([opp])
 						test = test[0][0]
 					fileName.write(" " + repr(test))
 
-					targetReward = (typeOfOpp == 1 or typeOfOpp == 2)	#The Principal should reward for Interdependent (when ra < c) and Coop if I tests
+					targetReward = (typeOfOpp == 1 or typeOfOpp == 2)	#The Recipient should reward for Interdependent (when ra < c) and Coop if I tests
 					targetReward = targetReward * (opp.c - opp.ra + Extra)
-					errorP = math.pow(outputP - targetReward, 2)
-					fileName.write(" " + repr(errorP))
+					errorR = math.pow(outputR - targetReward, 2)
+					fileName.write(" " + repr(errorR))
 
 					targetTest = (rewarded or typeOfOpp == 2)
-					errorA = math.pow(test - targetTest, 2)
-					fileName.write(" " + repr(errorA))
+					errorI = math.pow(test - targetTest, 2)
+					fileName.write(" " + repr(errorI))
 
 					fileName.write('\n')
